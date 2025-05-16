@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Suivi en Temps Réel",
+    "slug": "suivi-temps-reel",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "suivitr",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.suivitr",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Cette application utilise votre position pour suivre votre trajet et calculer le temps estimé d'arrivée.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Cette application utilise votre position pour suivre votre trajet et calculer le temps estimé d'arrivée."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "ACCESS_BACKGROUND_LOCATION"],
+      "package": "com.yourcompany.suivitr"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Autoriser $(PRODUCT_NAME) à utiliser votre position pour suivre votre trajet et calculer le temps estimé d'arrivée."
+        }
+      ]
+    ]
+  }
+}
