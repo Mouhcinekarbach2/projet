@@ -6,7 +6,7 @@ export type Coordinates = {
   latitude: number
   longitude: number
 }
-
+                                                         
 class LocationService {
   private static instance: LocationService
   private locationSubscription: LocationSubscription | null = null

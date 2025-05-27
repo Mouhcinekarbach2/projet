@@ -1,45 +1,42 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native"
+import { useEffect, useState, useCallback, useRef } from "react"
+import { View, Text, StyleSheet, Dimensions } from "react-native"
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps"
 import { useUser } from "../context/UserContext"
 import { Ionicons } from "@expo/vector-icons"
-import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useFocusEffect } from "@react-navigation/native"
-import { locationService } from "../services"
+import { locationService, apiService } from "../services"
 import type { LocationSubscription } from "expo-location"
+import type { Coordinates } from "../services"
+
+const { width, height } = Dimensions.get("window")
 
 const DriverScreen = () => {
-  const { driverLocation, studentLocation, updateDriverLocation, estimatedTime, currentTrip, startTrip, endTrip } =
-    useUser()
-  const [isTracking, setIsTracking] = useState(false)
+  const { driverLocation, studentLocation, updateDriverLocation, estimatedTime, updateEstimatedTime } = useUser()
   const [locationSubscription, setLocationSubscription] = useState<LocationSubscription | null>(null)
-  const [isTripActive, setIsTripActive] = useState(false)
+  const [routeCoordinates, setRouteCoordinates] = useState<Coordinates[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const mapRef = useRef<MapView>(null)
 
-  useFocusEffect(
-    useCallback(() => {
-      checkActiveTripStatus()
-    }, []),
-  )
-
+  // Démarrer automatiquement le suivi de position au chargement
   useEffect(() => {
+    startTracking()
+
     return () => {
       if (locationSubscription) {
         locationSubscription.remove()
       }
     }
-  }, [locationSubscription])
+  }, [])
 
-  const checkActiveTripStatus = async () => {
-    try {
-      const tripStatus = await AsyncStorage.getItem("activeTripDriver")
-      if (tripStatus === "active") {
-        setIsTripActive(true)
+  useFocusEffect(
+    useCallback(() => {
+      if (driverLocation && studentLocation) {
+        fetchRoute()
       }
-    } catch (error) {
-      console.error("Failed to check trip status:", error)
-    }
-  }
+    }, [driverLocation, studentLocation]),
+  )
 
   const startTracking = async () => {
     const subscription = await locationService.startLocationTracking((location) => {
@@ -48,98 +45,117 @@ const DriverScreen = () => {
 
     if (subscription) {
       setLocationSubscription(subscription)
-      setIsTracking(true)
     }
   }
 
-  const stopTracking = () => {
-    locationService.stopLocationTracking()
-    if (locationSubscription) {
-      locationSubscription.remove()
-      setLocationSubscription(null)
-    }
-    setIsTracking(false)
-  }
+  const fetchRoute = async () => {
+    if (!driverLocation || !studentLocation) return
 
-  const handleStartTrip = async () => {
-    startTrip()
-    setIsTripActive(true)
-    await AsyncStorage.setItem("activeTripDriver", "active")
-    if (!isTracking) {
-      startTracking()
-    }
-  }
+    try {
+      setIsLoading(true)
 
-  const handleEndTrip = async () => {
-    endTrip()
-    setIsTripActive(false)
-    await AsyncStorage.removeItem("activeTripDriver")
-    stopTracking()
+      // Obtenir un itinéraire réel à partir de l'API OSRM
+      const routeInfo = await apiService.getRouteDirections(driverLocation, studentLocation)
+
+      // Mettre à jour les coordonnées de l'itinéraire
+      setRouteCoordinates(routeInfo.coordinates)
+
+      // Mettre à jour le temps estimé
+      updateEstimatedTime(routeInfo.duration)
+
+      // Ajuster la vue de la carte pour montrer l'itinéraire complet
+      if (mapRef.current && routeInfo.coordinates.length > 0) {
+        mapRef.current.fitToCoordinates(routeInfo.coordinates, {
+          edgePadding: { top: 50, right: 50, bottom: 200, left: 50 },
+          animated: true,
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching route:", error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   if (!driverLocation) {
     return (
-      <View style={styles.container}>
-        <Text>Chargement de la position...</Text>
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Chargement de la position...</Text>
       </View>
     )
   }
 
   return (
     <View style={styles.container}>
-      <View style={styles.mapContainer}>
-        <Image
-          source={{
-            uri: `https://maps.googleapis.com/maps/api/staticmap?center=${driverLocation.latitude},${driverLocation.longitude}&zoom=14&size=600x400&markers=color:blue%7C${driverLocation.latitude},${driverLocation.longitude}${studentLocation ? `&markers=color:red%7C${studentLocation.latitude},${studentLocation.longitude}` : ""}&key=YOUR_API_KEY`,
+      <MapView
+        ref={mapRef}
+        provider={PROVIDER_GOOGLE}
+        style={styles.map}
+        initialRegion={{
+          latitude: driverLocation.latitude,
+          longitude: driverLocation.longitude,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        }}
+        showsUserLocation
+        showsMyLocationButton
+        showsCompass
+        showsScale
+      >
+        <Marker
+          coordinate={{
+            latitude: driverLocation.latitude,
+            longitude: driverLocation.longitude,
           }}
-          style={styles.mapImage}
-        />
-        <View style={styles.mapOverlay}>
-          <View style={styles.driverMarker}>
+          title="Votre position (Administrateur)"
+          description="Vous êtes ici"
+        >
+          <View style={[styles.markerContainer, { borderColor: "#4F46E5" }]}>
             <Ionicons name="car" size={24} color="#4F46E5" />
           </View>
-          {studentLocation && (
-            <View style={styles.studentMarker}>
-              <Ionicons name="school" size={24} color="#EF4444" />
+        </Marker>
+
+        {studentLocation && (
+          <Marker
+            coordinate={{
+              latitude: studentLocation.latitude,
+              longitude: studentLocation.longitude,
+            }}
+            title="KFC Kenitra"
+            description="Position de l'étudiant"
+          >
+            <View style={[styles.markerContainer, { borderColor: "#EF4444" }]}>
+              <Ionicons name="restaurant" size={24} color="#EF4444" />
             </View>
-          )}
-        </View>
-      </View>
+          </Marker>
+        )}
+
+        {routeCoordinates.length > 0 && (
+          <Polyline coordinates={routeCoordinates} strokeWidth={4} strokeColor="#4F46E5" />
+        )}
+      </MapView>
 
       <View style={styles.infoPanel}>
-        <Text style={styles.infoTitle}>Mode Conducteur</Text>
+        <Text style={styles.infoTitle}>Trajet vers l'étudiant (KFC Kenitra)</Text>
 
         {studentLocation && (
           <View style={styles.estimatedTimeContainer}>
             <Ionicons name="time-outline" size={24} color="#4F46E5" />
-            <Text style={styles.estimatedTimeText}>Temps estimé: {estimatedTime} minutes</Text>
+            <Text style={styles.estimatedTimeText}>
+              {isLoading ? "Calcul en cours..." : `Temps estimé: ${estimatedTime} minutes`}
+            </Text>
           </View>
         )}
 
-        <View style={styles.locationInfo}>
-          <Text style={styles.locationLabel}>Votre position:</Text>
-          <Text style={styles.locationCoords}>
-            Lat: {driverLocation.latitude.toFixed(4)}, Long: {driverLocation.longitude.toFixed(4)}
-          </Text>
-        </View>
-
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.trackingButton, isTracking ? styles.trackingButtonActive : null]}
-            onPress={isTracking ? stopTracking : startTracking}
-          >
-            <Text style={styles.trackingButtonText}>{isTracking ? "Arrêter le suivi" : "Démarrer le suivi"}</Text>
-          </TouchableOpacity>
-
-          {!isTripActive ? (
-            <TouchableOpacity style={styles.tripButton} onPress={handleStartTrip}>
-              <Text style={styles.tripButtonText}>Démarrer le trajet</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity style={[styles.tripButton, styles.endTripButton]} onPress={handleEndTrip}>
-              <Text style={styles.tripButtonText}>Terminer le trajet</Text>
-            </TouchableOpacity>
-          )}
+        <View style={styles.statusContainer}>
+          <View style={styles.statusItem}>
+            <Ionicons name="location" size={16} color="#10B981" />
+            <Text style={styles.statusText}>Position GPS active</Text>
+          </View>
+          <View style={styles.statusItem}>
+            <Ionicons name="navigate" size={16} color="#10B981" />
+            <Text style={styles.statusText}>Itinéraire en temps réel</Text>
+          </View>
         </View>
       </View>
     </View>
@@ -150,35 +166,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  mapContainer: {
+  loadingContainer: {
     flex: 1,
-    position: "relative",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
   },
-  mapImage: {
+  loadingText: {
+    fontSize: 16,
+    color: "#6B7280",
+  },
+  map: {
     width: "100%",
     height: "100%",
   },
-  mapOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  driverMarker: {
+  markerContainer: {
     backgroundColor: "white",
     borderRadius: 20,
     padding: 5,
     borderWidth: 2,
-    borderColor: "#4F46E5",
-  },
-  studentMarker: {
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 5,
-    borderWidth: 2,
-    borderColor: "#EF4444",
-    position: "absolute",
-    top: "40%",
-    right: "30%",
   },
   infoPanel: {
     position: "absolute",
@@ -198,68 +204,37 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: 15,
     color: "#333",
+    textAlign: "center",
   },
   estimatedTimeContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 15,
+    justifyContent: "center",
     backgroundColor: "#F3F4F6",
-    padding: 10,
+    padding: 15,
     borderRadius: 10,
+    marginBottom: 15,
   },
   estimatedTimeText: {
     marginLeft: 10,
-    fontSize: 16,
+    fontSize: 18,
     color: "#4B5563",
+    fontWeight: "600",
   },
-  locationInfo: {
-    marginBottom: 15,
-    backgroundColor: "#F3F4F6",
-    padding: 10,
-    borderRadius: 10,
+  statusContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
   },
-  locationLabel: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#4B5563",
-    marginBottom: 5,
-  },
-  locationCoords: {
-    fontSize: 14,
-    color: "#6B7280",
-  },
-  trackingButton: {
-    backgroundColor: "#4F46E5",
-    padding: 15,
-    borderRadius: 10,
+  statusItem: {
+    flexDirection: "row",
     alignItems: "center",
   },
-  trackingButtonActive: {
-    backgroundColor: "#EF4444",
-  },
-  trackingButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  buttonContainer: {
-    gap: 10,
-  },
-  tripButton: {
-    backgroundColor: "#10B981",
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  endTripButton: {
-    backgroundColor: "#EF4444",
-  },
-  tripButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 16,
+  statusText: {
+    marginLeft: 5,
+    fontSize: 12,
+    color: "#10B981",
   },
 })
 

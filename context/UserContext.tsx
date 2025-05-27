@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect } from "react"
-
 import { createContext, useState, useContext, type ReactNode } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { locationService } from "../services"
@@ -21,7 +20,6 @@ type Trip = {
 
 type UserContextType = {
   userType: string
-  setUserType: (type: string) => void
   currentLocation: Coordinates | null
   updateLocation: (location: Coordinates) => void
   driverLocation: Coordinates | null
@@ -36,9 +34,14 @@ type UserContextType = {
   tripHistory: Trip[]
 }
 
+// Position fixe de l'étudiant - KFC Kenitra (coordonnées précises)
+const KFC_KENITRA_LOCATION: Coordinates = {
+  latitude: 34.263,
+  longitude: -6.581,
+}
+
 const defaultContext: UserContextType = {
-  userType: "",
-  setUserType: () => {},
+  userType: "driver",
   currentLocation: null,
   updateLocation: () => {},
   driverLocation: null,
@@ -63,18 +66,16 @@ type UserProviderProps = {
 }
 
 export const UserProvider = ({ children, initialUserType }: UserProviderProps) => {
-  const [userType, setUserType] = useState(initialUserType)
+  // Toujours en mode "driver" (administrateur)
+  const [userType] = useState("driver")
   const [currentLocation, setCurrentLocation] = useState<Coordinates | null>(null)
   const [driverLocation, setDriverLocation] = useState<Coordinates | null>({
-    // Kenitra, Morocco coordinates
+    // Position initiale - Centre-ville de Kenitra
     latitude: 34.261,
     longitude: -6.583,
   })
-  const [studentLocation, setStudentLocation] = useState<Coordinates | null>({
-    // Slightly offset from Kenitra center
-    latitude: 34.2702,
-    longitude: -6.5802,
-  })
+  // Position fixe de l'étudiant à KFC Kenitra (ne change jamais)
+  const [studentLocation] = useState<Coordinates | null>(KFC_KENITRA_LOCATION)
   const [estimatedTime, setEstimatedTime] = useState<number | null>(10)
   const [currentTrip, setCurrentTrip] = useState<Trip | null>(null)
   const [tripHistory, setTripHistory] = useState<Trip[]>([])
@@ -84,19 +85,13 @@ export const UserProvider = ({ children, initialUserType }: UserProviderProps) =
       const location = await locationService.getCurrentPosition()
       if (location) {
         setCurrentLocation(location)
-
-        // Update the appropriate location based on user type
-        if (userType === "driver") {
-          setDriverLocation(location)
-        } else {
-          setStudentLocation(location)
-        }
+        setDriverLocation(location)
       }
     })()
 
     // Load trip history from AsyncStorage
     loadTripHistory()
-  }, [userType])
+  }, [])
 
   const loadTripHistory = async () => {
     try {
@@ -127,14 +122,14 @@ export const UserProvider = ({ children, initialUserType }: UserProviderProps) =
   }
 
   const updateStudentLocation = (location: Coordinates) => {
-    setStudentLocation(location)
-    calculateEstimatedTime(driverLocation, location)
+    // Ne rien faire - la position de l'étudiant reste fixe à KFC Kenitra
+    console.log("La position de l'étudiant est fixe à KFC Kenitra et ne peut pas être mise à jour")
   }
 
   const calculateEstimatedTime = (from: Coordinates | null, to: Coordinates | null) => {
     if (!from || !to) return
 
-    const timeInMinutes = locationService.calculateEstimatedTime(from, to)
+    const timeInMinutes = locationService.calculateEstimatedTime(from, to, 25) // Vitesse moyenne de 25 km/h en ville
     if (timeInMinutes) {
       setEstimatedTime(timeInMinutes)
     }
@@ -197,7 +192,6 @@ export const UserProvider = ({ children, initialUserType }: UserProviderProps) =
     <UserContext.Provider
       value={{
         userType,
-        setUserType,
         currentLocation,
         updateLocation,
         driverLocation,

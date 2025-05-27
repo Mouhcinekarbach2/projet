@@ -19,6 +19,9 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Cette application utilise votre position pour suivre votre trajet et calculer le temps estimé d'arrivée.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Cette application utilise votre position pour suivre votre trajet et calculer le temps estimé d'arrivée."
+      },
+      "config": {
+        "googleMapsApiKey": "VOTRE_CLE_API_GOOGLE_MAPS"
       }
     },
     "android": {
@@ -27,7 +30,12 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "ACCESS_BACKGROUND_LOCATION"],
-      "package": "com.yourcompany.suivitr"
+      "package": "com.yourcompany.suivitr",
+      "config": {
+        "googleMaps": {
+          "apiKey": "VOTRE_CLE_API_GOOGLE_MAPS"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"

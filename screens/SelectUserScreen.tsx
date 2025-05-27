@@ -17,15 +17,23 @@ const SelectUserScreen = ({ onSelectUserType }: SelectUserScreenProps) => {
             <View style={styles.iconContainer}>
               <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/3774/3774278.png" }} style={styles.icon} />
             </View>
-            <Text style={styles.optionText}>Conducteur</Text>
+            <Text style={styles.optionText}>Administrateur</Text>
+            <Text style={styles.optionDescription}>Suivre la position de l'étudiant</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.option} onPress={() => onSelectUserType("student")}>
             <View style={styles.iconContainer}>
               <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/2302/2302834.png" }} style={styles.icon} />
             </View>
-            <Text style={styles.optionText}>Étudiant</Text>
+            <Text style={styles.optionText}>Utilisateur</Text>
+            <Text style={styles.optionDescription}>Voir l'itinéraire vers l'étudiant</Text>
           </TouchableOpacity>
+        </View>
+
+        <View style={styles.infoContainer}>
+          <Text style={styles.infoText}>
+            L'étudiant est situé à KFC Kenitra. L'application affichera toujours l'itinéraire vers cette destination.
+          </Text>
         </View>
       </View>
     </SafeAreaView>
@@ -58,6 +66,7 @@ const styles = StyleSheet.create({
     width: "100%",
     flexDirection: "row",
     justifyContent: "space-around",
+    marginBottom: 30,
   },
   option: {
     alignItems: "center",
@@ -88,6 +97,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#333",
+    marginBottom: 5,
+  },
+  optionDescription: {
+    fontSize: 12,
+    color: "#666",
+    textAlign: "center",
+  },
+  infoContainer: {
+    backgroundColor: "#E3F2FD",
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 20,
+  },
+  infoText: {
+    fontSize: 14,
+    color: "#1976D2",
+    textAlign: "center",
+    lineHeight: 20,
   },
 })
 
