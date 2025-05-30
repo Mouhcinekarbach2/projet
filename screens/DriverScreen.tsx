@@ -1,14 +1,14 @@
 "use client"
 
-import { useEffect, useState, useCallback, useRef } from "react"
-import { View, Text, StyleSheet, Dimensions } from "react-native"
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps"
-import { useUser } from "../context/UserContext"
 import { Ionicons } from "@expo/vector-icons"
 import { useFocusEffect } from "@react-navigation/native"
-import { locationService, apiService } from "../services"
 import type { LocationSubscription } from "expo-location"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { Dimensions, StyleSheet, Text, View } from "react-native"
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps"
+import { useUser } from "../context/UserContext"
 import type { Coordinates } from "../services"
+import { apiService, locationService } from "../services"
 
 const { width, height } = Dimensions.get("window")
 
@@ -121,11 +121,11 @@ const DriverScreen = () => {
               latitude: studentLocation.latitude,
               longitude: studentLocation.longitude,
             }}
-            title="KFC Kenitra"
+            title="Ahmed karim"
             description="Position de l'étudiant"
           >
             <View style={[styles.markerContainer, { borderColor: "#EF4444" }]}>
-              <Ionicons name="restaurant" size={24} color="#EF4444" />
+              <Ionicons name="flag" size={20} color="#EF4444" />
             </View>
           </Marker>
         )}
@@ -136,8 +136,6 @@ const DriverScreen = () => {
       </MapView>
 
       <View style={styles.infoPanel}>
-        <Text style={styles.infoTitle}>Trajet vers l'étudiant (KFC Kenitra)</Text>
-
         {studentLocation && (
           <View style={styles.estimatedTimeContainer}>
             <Ionicons name="time-outline" size={24} color="#4F46E5" />

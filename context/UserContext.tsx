@@ -1,10 +1,9 @@
 "use client"
 
-import { useEffect } from "react"
-import { createContext, useState, useContext, type ReactNode } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import { locationService } from "../services"
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import type { Coordinates } from "../services"
+import { locationService } from "../services"
 
 type Trip = {
   id: string
@@ -36,8 +35,8 @@ type UserContextType = {
 
 // Position fixe de l'étudiant - KFC Kenitra (coordonnées précises)
 const KFC_KENITRA_LOCATION: Coordinates = {
-  latitude: 34.263,
-  longitude: -6.581,
+  latitude: 34.045166,
+  longitude: -6.815189,
 }
 
 const defaultContext: UserContextType = {
@@ -71,8 +70,8 @@ export const UserProvider = ({ children, initialUserType }: UserProviderProps) =
   const [currentLocation, setCurrentLocation] = useState<Coordinates | null>(null)
   const [driverLocation, setDriverLocation] = useState<Coordinates | null>({
     // Position initiale - Centre-ville de Kenitra
-    latitude: 34.261,
-    longitude: -6.583,
+    latitude: 34.050118,
+    longitude: -6.813054,
   })
   // Position fixe de l'étudiant à KFC Kenitra (ne change jamais)
   const [studentLocation] = useState<Coordinates | null>(KFC_KENITRA_LOCATION)
